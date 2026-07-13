@@ -550,61 +550,106 @@ export class SelectionSetToObject<
           }
 
           if (conditionalDirectivesFound) {
-            // When a FragmentSpreadUsage is marked as conditional,
-            // it should just be treated like an Inline Fragment
-            // i.e. every field in the fragment's selection set should be optional
-            const flattenedSelectionNodes = selectionNodes.reduce<GroupedTypeNameNode[]>(
-              (prev, node) => {
-                if ('kind' in node) {
-                  prev.push(node);
-                  return prev;
+            // With fragment masking, a conditional Fragment Spread must stay masked:
+            // emit its ref with an optional key (mirroring how the incremental
+            // @defer path below preserves masking) instead of inlining its fields
+            // into the operation type.
+            let nodesToInline = selectionNodes;
+            if (this._config.inlineFragmentTypes === 'mask') {
+              nodesToInline = [];
+              for (const selectionNode of selectionNodes) {
+                if (
+                  !('fragmentName' in selectionNode) ||
+                  !hasConditionalDirectives(selectionNode.fragmentDirectives) ||
+                  // unmasked spreads (e.g. Apollo `@unmask`) keep the legacy
+                  // inlining path below, which preserves per-field optionality
+                  (this._config.customDirectives.apolloUnmask &&
+                    selectionNode.fragmentDirectives.some(d => d.name.value === 'unmask'))
+                ) {
+                  nodesToInline.push(selectionNode);
+                  continue;
                 }
 
-                // When a node is a FragmentSpreadUsage,
-                // We just "inline" all the field in its selection set. Note: each field has fragmentDirectives which should contain `@skip` or `@inlcude`
-                // So, `buildSelectionSet` function below can correctly make said fields optional
-                for (const fragmentSpreadUsageSelectionNode of node.selectionNodes) {
-                  prev.push(fragmentSpreadUsageSelectionNode);
+                const { fields: conditionalFields, dependentTypes: conditionalDependentTypes } =
+                  this.buildSelectionSet(schemaType, [selectionNode], {
+                    conditionalTypes: true,
+                    unsetTypes: hasIncrementalDeliveryDirectives(selectionNode.fragmentDirectives),
+                    parentFieldName: parentName,
+                  });
+                const conditionalSet = this.selectionSetStringFromFields(conditionalFields);
+                if (conditionalSet) {
+                  prev[typeName].push(conditionalSet);
                 }
-                return prev;
-              },
-              [],
-            );
-
-            // Top-level INLINE_FRAGMENT / FRAGMENT_SPREAD nodes among the
-            // inlined selections cannot be consumed directly by
-            // `buildSelectionSet`, which only handles FIELD and DIRECTIVE
-            // kinds for AST nodes and throws "Unexpected type." otherwise.
-            // Route them through `flattenSelectionSet` — which already
-            // expands inline fragments and fragment spreads per type — and
-            // merge the FIELD-only result with the already-FIELD selections
-            // before handing off.
-            const directNodes: GroupedTypeNameNode[] = [];
-            const nestedSelections: SelectionNode[] = [];
-            for (const n of flattenedSelectionNodes) {
-              if (
-                'kind' in n &&
-                (n.kind === Kind.INLINE_FRAGMENT || n.kind === Kind.FRAGMENT_SPREAD)
-              ) {
-                nestedSelections.push(n);
-              } else {
-                directNodes.push(n);
+                dependentTypes.push(...conditionalDependentTypes);
               }
             }
-            if (nestedSelections.length) {
-              const { selectionNodesByTypeName: nestedByType } = this.flattenSelectionSet(
-                nestedSelections,
-                schemaType,
-              );
-              const nestedForThisType = nestedByType.get(typeName) ?? [];
-              directNodes.push(...nestedForThisType);
-            }
 
-            collectGrouped(directNodes);
+            if (nodesToInline.length > 0) {
+              // When a FragmentSpreadUsage is marked as conditional,
+              // it should just be treated like an Inline Fragment
+              // i.e. every field in the fragment's selection set should be optional
+              const flattenedSelectionNodes = nodesToInline.reduce<GroupedTypeNameNode[]>(
+                (prev, node) => {
+                  if ('kind' in node) {
+                    prev.push(node);
+                    return prev;
+                  }
+
+                  // When a node is a FragmentSpreadUsage,
+                  // We just "inline" all the field in its selection set. Note: each field has fragmentDirectives which should contain `@skip` or `@inlcude`
+                  // So, `buildSelectionSet` function below can correctly make said fields optional
+                  for (const fragmentSpreadUsageSelectionNode of node.selectionNodes) {
+                    prev.push(fragmentSpreadUsageSelectionNode);
+                  }
+                  return prev;
+                },
+                [],
+              );
+
+              // Top-level INLINE_FRAGMENT / FRAGMENT_SPREAD nodes among the
+              // inlined selections cannot be consumed directly by
+              // `buildSelectionSet`, which only handles FIELD and DIRECTIVE
+              // kinds for AST nodes and throws "Unexpected type." otherwise.
+              // Route them through `flattenSelectionSet` — which already
+              // expands inline fragments and fragment spreads per type — and
+              // merge the FIELD-only result with the already-FIELD selections
+              // before handing off.
+              const directNodes: GroupedTypeNameNode[] = [];
+              const nestedSelections: SelectionNode[] = [];
+              for (const n of flattenedSelectionNodes) {
+                if (
+                  'kind' in n &&
+                  (n.kind === Kind.INLINE_FRAGMENT || n.kind === Kind.FRAGMENT_SPREAD)
+                ) {
+                  nestedSelections.push(n);
+                } else {
+                  directNodes.push(n);
+                }
+              }
+              if (nestedSelections.length) {
+                const { selectionNodesByTypeName: nestedByType } = this.flattenSelectionSet(
+                  nestedSelections,
+                  schemaType,
+                );
+                const nestedForThisType = nestedByType.get(typeName) ?? [];
+                directNodes.push(...nestedForThisType);
+              }
+
+              collectGrouped(directNodes);
+            }
           }
 
           if (incrementalDirectivesFound) {
             for (const incrementalNode of selectionNodes) {
+              // Conditional spreads were already emitted as masked optional refs
+              // (with `Incremental` applied) in the conditional branch above.
+              if (
+                this._config.inlineFragmentTypes === 'mask' &&
+                hasConditionalDirectives(incrementalNode.fragmentDirectives)
+              ) {
+                continue;
+              }
+
               // 1. fragment masking
               if (
                 this._config.inlineFragmentTypes === 'mask' &&
@@ -762,7 +807,7 @@ export class SelectionSetToObject<
   protected buildSelectionSet(
     parentSchemaType: GraphQLObjectType,
     selectionNodes: Array<GroupedTypeNameNode>,
-    options: { unsetTypes?: boolean; parentFieldName?: string },
+    options: { unsetTypes?: boolean; conditionalTypes?: boolean; parentFieldName?: string },
   ) {
     const primitiveFields = new Map<string, EnrichedFieldNode>();
     const primitiveAliasFields = new Map<string, EnrichedFieldNode>();
@@ -986,7 +1031,12 @@ export class SelectionSetToObject<
       } else if (this._config.inlineFragmentTypes === 'mask') {
         fields.push(
           `{ ' $fragmentRefs'?: { ${fragmentsSpreadUsages
-            .map(name => `'${name}': ${options.unsetTypes ? `Incremental<${name}>` : name}`)
+            .map(
+              name =>
+                `'${name}'${options.conditionalTypes ? '?' : ''}: ${
+                  options.unsetTypes ? `Incremental<${name}>` : name
+                }`,
+            )
             .join(`;`)} } }`,
         );
       }
