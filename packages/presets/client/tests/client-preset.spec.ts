@@ -866,6 +866,23 @@ export * from "./gql";`);
             : never
           : never;
 
+        /**
+         * Variant of \`FragmentType\` for fragment spreads annotated with a conditional
+         * directive (\`@include\`/\`@skip\`): the fragment may be absent at runtime, so its
+         * ref key is optional. \`FragmentType\` is assignable to \`OptionalFragmentType\`,
+         * so a component accepting an optional fragment also accepts unconditional parents.
+         */
+        export type OptionalFragmentType<TDocumentType extends DocumentTypeDecoration<any, any>> = TDocumentType extends DocumentTypeDecoration<
+          infer TType,
+          any
+        >
+          ? [TType] extends [{ ' $fragmentName'?: infer TKey }]
+            ? TKey extends string
+              ? { ' $fragmentRefs'?: { [key in TKey]?: TType } }
+              : never
+            : never
+          : never;
+
         // return non-nullable if \`fragmentType\` is non-nullable
         export function iLikeTurtles<TType>(
           _documentNode: DocumentTypeDecoration<TType, any>,
@@ -906,10 +923,50 @@ export * from "./gql";`);
           _documentNode: DocumentTypeDecoration<TType, any>,
           fragmentType: ReadonlyArray<FragmentType<DocumentTypeDecoration<TType, any>>> | null | undefined
         ): ReadonlyArray<TType> | null | undefined;
+        // return nullable if \`fragmentType\` is optional (fragment spread with @include/@skip)
         export function iLikeTurtles<TType>(
           _documentNode: DocumentTypeDecoration<TType, any>,
-          fragmentType: FragmentType<DocumentTypeDecoration<TType, any>> | Array<FragmentType<DocumentTypeDecoration<TType, any>>> | ReadonlyArray<FragmentType<DocumentTypeDecoration<TType, any>>> | null | undefined
-        ): TType | Array<TType> | ReadonlyArray<TType> | null | undefined {
+          fragmentType: OptionalFragmentType<DocumentTypeDecoration<TType, any>>
+        ): TType | undefined;
+        // return nullable if \`fragmentType\` is optional and undefined
+        export function iLikeTurtles<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: OptionalFragmentType<DocumentTypeDecoration<TType, any>> | undefined
+        ): TType | undefined;
+        // return nullable if \`fragmentType\` is optional and nullable
+        export function iLikeTurtles<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: OptionalFragmentType<DocumentTypeDecoration<TType, any>> | null
+        ): TType | null | undefined;
+        // return nullable if \`fragmentType\` is optional, nullable or undefined
+        export function iLikeTurtles<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: OptionalFragmentType<DocumentTypeDecoration<TType, any>> | null | undefined
+        ): TType | null | undefined;
+        // return array of nullable if \`fragmentType\` is array of optional
+        export function iLikeTurtles<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: Array<OptionalFragmentType<DocumentTypeDecoration<TType, any>>>
+        ): Array<TType | undefined>;
+        // return array of nullable if \`fragmentType\` is nullable array of optional
+        export function iLikeTurtles<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: Array<OptionalFragmentType<DocumentTypeDecoration<TType, any>>> | null | undefined
+        ): Array<TType | undefined> | null | undefined;
+        // return readonly array of nullable if \`fragmentType\` is readonly array of optional
+        export function iLikeTurtles<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: ReadonlyArray<OptionalFragmentType<DocumentTypeDecoration<TType, any>>>
+        ): ReadonlyArray<TType | undefined>;
+        // return readonly array of nullable if \`fragmentType\` is nullable readonly array of optional
+        export function iLikeTurtles<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: ReadonlyArray<OptionalFragmentType<DocumentTypeDecoration<TType, any>>> | null | undefined
+        ): ReadonlyArray<TType | undefined> | null | undefined;
+        export function iLikeTurtles<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: OptionalFragmentType<DocumentTypeDecoration<TType, any>> | Array<OptionalFragmentType<DocumentTypeDecoration<TType, any>>> | ReadonlyArray<OptionalFragmentType<DocumentTypeDecoration<TType, any>>> | null | undefined
+        ): TType | Array<TType | undefined> | ReadonlyArray<TType | undefined> | null | undefined {
           return fragmentType as any;
         }
 
@@ -986,6 +1043,23 @@ export * from "./gql";`);
             : never
           : never;
 
+        /**
+         * Variant of \`FragmentType\` for fragment spreads annotated with a conditional
+         * directive (\`@include\`/\`@skip\`): the fragment may be absent at runtime, so its
+         * ref key is optional. \`FragmentType\` is assignable to \`OptionalFragmentType\`,
+         * so a component accepting an optional fragment also accepts unconditional parents.
+         */
+        export type OptionalFragmentType<TDocumentType extends DocumentTypeDecoration<any, any>> = TDocumentType extends DocumentTypeDecoration<
+          infer TType,
+          any
+        >
+          ? [TType] extends [{ ' $fragmentName'?: infer TKey }]
+            ? TKey extends string
+              ? { ' $fragmentRefs'?: { [key in TKey]?: TType } }
+              : never
+            : never
+          : never;
+
         // return non-nullable if \`fragmentType\` is non-nullable
         export function useFragment<TType>(
           _documentNode: DocumentTypeDecoration<TType, any>,
@@ -1026,10 +1100,50 @@ export * from "./gql";`);
           _documentNode: DocumentTypeDecoration<TType, any>,
           fragmentType: ReadonlyArray<FragmentType<DocumentTypeDecoration<TType, any>>> | null | undefined
         ): ReadonlyArray<TType> | null | undefined;
+        // return nullable if \`fragmentType\` is optional (fragment spread with @include/@skip)
         export function useFragment<TType>(
           _documentNode: DocumentTypeDecoration<TType, any>,
-          fragmentType: FragmentType<DocumentTypeDecoration<TType, any>> | Array<FragmentType<DocumentTypeDecoration<TType, any>>> | ReadonlyArray<FragmentType<DocumentTypeDecoration<TType, any>>> | null | undefined
-        ): TType | Array<TType> | ReadonlyArray<TType> | null | undefined {
+          fragmentType: OptionalFragmentType<DocumentTypeDecoration<TType, any>>
+        ): TType | undefined;
+        // return nullable if \`fragmentType\` is optional and undefined
+        export function useFragment<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: OptionalFragmentType<DocumentTypeDecoration<TType, any>> | undefined
+        ): TType | undefined;
+        // return nullable if \`fragmentType\` is optional and nullable
+        export function useFragment<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: OptionalFragmentType<DocumentTypeDecoration<TType, any>> | null
+        ): TType | null | undefined;
+        // return nullable if \`fragmentType\` is optional, nullable or undefined
+        export function useFragment<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: OptionalFragmentType<DocumentTypeDecoration<TType, any>> | null | undefined
+        ): TType | null | undefined;
+        // return array of nullable if \`fragmentType\` is array of optional
+        export function useFragment<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: Array<OptionalFragmentType<DocumentTypeDecoration<TType, any>>>
+        ): Array<TType | undefined>;
+        // return array of nullable if \`fragmentType\` is nullable array of optional
+        export function useFragment<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: Array<OptionalFragmentType<DocumentTypeDecoration<TType, any>>> | null | undefined
+        ): Array<TType | undefined> | null | undefined;
+        // return readonly array of nullable if \`fragmentType\` is readonly array of optional
+        export function useFragment<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: ReadonlyArray<OptionalFragmentType<DocumentTypeDecoration<TType, any>>>
+        ): ReadonlyArray<TType | undefined>;
+        // return readonly array of nullable if \`fragmentType\` is nullable readonly array of optional
+        export function useFragment<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: ReadonlyArray<OptionalFragmentType<DocumentTypeDecoration<TType, any>>> | null | undefined
+        ): ReadonlyArray<TType | undefined> | null | undefined;
+        export function useFragment<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: OptionalFragmentType<DocumentTypeDecoration<TType, any>> | Array<OptionalFragmentType<DocumentTypeDecoration<TType, any>>> | ReadonlyArray<OptionalFragmentType<DocumentTypeDecoration<TType, any>>> | null | undefined
+        ): TType | Array<TType | undefined> | ReadonlyArray<TType | undefined> | null | undefined {
           return fragmentType as any;
         }
 
@@ -1119,6 +1233,23 @@ export * from "./gql";`);
             : never
           : never;
 
+        /**
+         * Variant of \`FragmentType\` for fragment spreads annotated with a conditional
+         * directive (\`@include\`/\`@skip\`): the fragment may be absent at runtime, so its
+         * ref key is optional. \`FragmentType\` is assignable to \`OptionalFragmentType\`,
+         * so a component accepting an optional fragment also accepts unconditional parents.
+         */
+        export type OptionalFragmentType<TDocumentType extends DocumentTypeDecoration<any, any>> = TDocumentType extends DocumentTypeDecoration<
+          infer TType,
+          any
+        >
+          ? [TType] extends [{ ' $fragmentName'?: infer TKey }]
+            ? TKey extends string
+              ? { ' $fragmentRefs'?: { [key in TKey]?: TType } }
+              : never
+            : never
+          : never;
+
         // return non-nullable if \`fragmentType\` is non-nullable
         export function useFragment<TType>(
           _documentNode: DocumentTypeDecoration<TType, any>,
@@ -1159,10 +1290,50 @@ export * from "./gql";`);
           _documentNode: DocumentTypeDecoration<TType, any>,
           fragmentType: ReadonlyArray<FragmentType<DocumentTypeDecoration<TType, any>>> | null | undefined
         ): ReadonlyArray<TType> | null | undefined;
+        // return nullable if \`fragmentType\` is optional (fragment spread with @include/@skip)
         export function useFragment<TType>(
           _documentNode: DocumentTypeDecoration<TType, any>,
-          fragmentType: FragmentType<DocumentTypeDecoration<TType, any>> | Array<FragmentType<DocumentTypeDecoration<TType, any>>> | ReadonlyArray<FragmentType<DocumentTypeDecoration<TType, any>>> | null | undefined
-        ): TType | Array<TType> | ReadonlyArray<TType> | null | undefined {
+          fragmentType: OptionalFragmentType<DocumentTypeDecoration<TType, any>>
+        ): TType | undefined;
+        // return nullable if \`fragmentType\` is optional and undefined
+        export function useFragment<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: OptionalFragmentType<DocumentTypeDecoration<TType, any>> | undefined
+        ): TType | undefined;
+        // return nullable if \`fragmentType\` is optional and nullable
+        export function useFragment<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: OptionalFragmentType<DocumentTypeDecoration<TType, any>> | null
+        ): TType | null | undefined;
+        // return nullable if \`fragmentType\` is optional, nullable or undefined
+        export function useFragment<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: OptionalFragmentType<DocumentTypeDecoration<TType, any>> | null | undefined
+        ): TType | null | undefined;
+        // return array of nullable if \`fragmentType\` is array of optional
+        export function useFragment<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: Array<OptionalFragmentType<DocumentTypeDecoration<TType, any>>>
+        ): Array<TType | undefined>;
+        // return array of nullable if \`fragmentType\` is nullable array of optional
+        export function useFragment<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: Array<OptionalFragmentType<DocumentTypeDecoration<TType, any>>> | null | undefined
+        ): Array<TType | undefined> | null | undefined;
+        // return readonly array of nullable if \`fragmentType\` is readonly array of optional
+        export function useFragment<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: ReadonlyArray<OptionalFragmentType<DocumentTypeDecoration<TType, any>>>
+        ): ReadonlyArray<TType | undefined>;
+        // return readonly array of nullable if \`fragmentType\` is nullable readonly array of optional
+        export function useFragment<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: ReadonlyArray<OptionalFragmentType<DocumentTypeDecoration<TType, any>>> | null | undefined
+        ): ReadonlyArray<TType | undefined> | null | undefined;
+        export function useFragment<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: OptionalFragmentType<DocumentTypeDecoration<TType, any>> | Array<OptionalFragmentType<DocumentTypeDecoration<TType, any>>> | ReadonlyArray<OptionalFragmentType<DocumentTypeDecoration<TType, any>>> | null | undefined
+        ): TType | Array<TType | undefined> | ReadonlyArray<TType | undefined> | null | undefined {
           return fragmentType as any;
         }
 
@@ -1252,6 +1423,23 @@ export * from "./gql";`);
             : never
           : never;
 
+        /**
+         * Variant of \`FragmentType\` for fragment spreads annotated with a conditional
+         * directive (\`@include\`/\`@skip\`): the fragment may be absent at runtime, so its
+         * ref key is optional. \`FragmentType\` is assignable to \`OptionalFragmentType\`,
+         * so a component accepting an optional fragment also accepts unconditional parents.
+         */
+        export type OptionalFragmentType<TDocumentType extends DocumentTypeDecoration<any, any>> = TDocumentType extends DocumentTypeDecoration<
+          infer TType,
+          any
+        >
+          ? [TType] extends [{ ' $fragmentName'?: infer TKey }]
+            ? TKey extends string
+              ? { ' $fragmentRefs'?: { [key in TKey]?: TType } }
+              : never
+            : never
+          : never;
+
         // return non-nullable if \`fragmentType\` is non-nullable
         export function useFragment<TType>(
           _documentNode: DocumentTypeDecoration<TType, any>,
@@ -1292,10 +1480,50 @@ export * from "./gql";`);
           _documentNode: DocumentTypeDecoration<TType, any>,
           fragmentType: ReadonlyArray<FragmentType<DocumentTypeDecoration<TType, any>>> | null | undefined
         ): ReadonlyArray<TType> | null | undefined;
+        // return nullable if \`fragmentType\` is optional (fragment spread with @include/@skip)
         export function useFragment<TType>(
           _documentNode: DocumentTypeDecoration<TType, any>,
-          fragmentType: FragmentType<DocumentTypeDecoration<TType, any>> | Array<FragmentType<DocumentTypeDecoration<TType, any>>> | ReadonlyArray<FragmentType<DocumentTypeDecoration<TType, any>>> | null | undefined
-        ): TType | Array<TType> | ReadonlyArray<TType> | null | undefined {
+          fragmentType: OptionalFragmentType<DocumentTypeDecoration<TType, any>>
+        ): TType | undefined;
+        // return nullable if \`fragmentType\` is optional and undefined
+        export function useFragment<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: OptionalFragmentType<DocumentTypeDecoration<TType, any>> | undefined
+        ): TType | undefined;
+        // return nullable if \`fragmentType\` is optional and nullable
+        export function useFragment<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: OptionalFragmentType<DocumentTypeDecoration<TType, any>> | null
+        ): TType | null | undefined;
+        // return nullable if \`fragmentType\` is optional, nullable or undefined
+        export function useFragment<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: OptionalFragmentType<DocumentTypeDecoration<TType, any>> | null | undefined
+        ): TType | null | undefined;
+        // return array of nullable if \`fragmentType\` is array of optional
+        export function useFragment<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: Array<OptionalFragmentType<DocumentTypeDecoration<TType, any>>>
+        ): Array<TType | undefined>;
+        // return array of nullable if \`fragmentType\` is nullable array of optional
+        export function useFragment<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: Array<OptionalFragmentType<DocumentTypeDecoration<TType, any>>> | null | undefined
+        ): Array<TType | undefined> | null | undefined;
+        // return readonly array of nullable if \`fragmentType\` is readonly array of optional
+        export function useFragment<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: ReadonlyArray<OptionalFragmentType<DocumentTypeDecoration<TType, any>>>
+        ): ReadonlyArray<TType | undefined>;
+        // return readonly array of nullable if \`fragmentType\` is nullable readonly array of optional
+        export function useFragment<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: ReadonlyArray<OptionalFragmentType<DocumentTypeDecoration<TType, any>>> | null | undefined
+        ): ReadonlyArray<TType | undefined> | null | undefined;
+        export function useFragment<TType>(
+          _documentNode: DocumentTypeDecoration<TType, any>,
+          fragmentType: OptionalFragmentType<DocumentTypeDecoration<TType, any>> | Array<OptionalFragmentType<DocumentTypeDecoration<TType, any>>> | ReadonlyArray<OptionalFragmentType<DocumentTypeDecoration<TType, any>>> | null | undefined
+        ): TType | Array<TType | undefined> | ReadonlyArray<TType | undefined> | null | undefined {
           return fragmentType as any;
         }
 
