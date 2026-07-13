@@ -1123,3 +1123,191 @@ describe('TypeScript Operations Plugin - @include and @skip with @defer', () => 
     `);
   });
 });
+
+describe('TypeScript Operations Plugin - @include/@skip directives with fragment masking', () => {
+  const maskSchema = buildSchema(/* GraphQL */ `
+    type Query {
+      user: User
+    }
+
+    type User {
+      id: ID!
+      name: String
+      age: Int
+    }
+  `);
+
+  it('keeps fragment masking for fragment spreads with @include', async () => {
+    const document = parse(/* GraphQL */ `
+      fragment Name on User {
+        name
+      }
+      query user($withName: Boolean!) {
+        user {
+          id
+          ...Name @include(if: $withName)
+        }
+      }
+    `);
+
+    const { content } = await plugin(
+      maskSchema,
+      [{ location: '', document }],
+      { inlineFragmentTypes: 'mask' },
+      { outputFile: 'graphql.ts' },
+    );
+
+    expect(content).toContain(`' $fragmentRefs'?: { 'NameFragment'?: NameFragment }`);
+    // the fragment fields must not be inlined into the operation type
+    expect(content).not.toContain('name?:');
+    expect(content).toMatchInlineSnapshot(`
+      "export type NameFragment = { name: string | null } & { ' $fragmentName'?: 'NameFragment' };
+
+      export type UserQueryVariables = Exact<{
+        withName: boolean;
+      }>;
+
+
+      export type UserQuery = { user: { id: string } & { ' $fragmentRefs'?: { 'NameFragment'?: NameFragment } } | null };
+      "
+    `);
+  });
+
+  it('keeps fragment masking for fragment spreads with @skip', async () => {
+    const document = parse(/* GraphQL */ `
+      fragment Name on User {
+        name
+      }
+      query user($hideName: Boolean!) {
+        user {
+          id
+          ...Name @skip(if: $hideName)
+        }
+      }
+    `);
+
+    const { content } = await plugin(
+      maskSchema,
+      [{ location: '', document }],
+      { inlineFragmentTypes: 'mask' },
+      { outputFile: 'graphql.ts' },
+    );
+
+    expect(content).toContain(`' $fragmentRefs'?: { 'NameFragment'?: NameFragment }`);
+    expect(content).not.toContain('name?:');
+    expect(content).toMatchInlineSnapshot(`
+      "export type NameFragment = { name: string | null } & { ' $fragmentName'?: 'NameFragment' };
+
+      export type UserQueryVariables = Exact<{
+        hideName: boolean;
+      }>;
+
+
+      export type UserQuery = { user: { id: string } & { ' $fragmentRefs'?: { 'NameFragment'?: NameFragment } } | null };
+      "
+    `);
+  });
+
+  it('keeps unconditional fragment spreads required when mixed with conditional ones', async () => {
+    const document = parse(/* GraphQL */ `
+      fragment Name on User {
+        name
+      }
+      fragment Age on User {
+        age
+      }
+      query user($withName: Boolean!) {
+        user {
+          id
+          ...Age
+          ...Name @include(if: $withName)
+        }
+      }
+    `);
+
+    const { content } = await plugin(
+      maskSchema,
+      [{ location: '', document }],
+      { inlineFragmentTypes: 'mask' },
+      { outputFile: 'graphql.ts' },
+    );
+
+    expect(content).toContain(`' $fragmentRefs'?: { 'AgeFragment': AgeFragment }`);
+    expect(content).toContain(`' $fragmentRefs'?: { 'NameFragment'?: NameFragment }`);
+    expect(content).toMatchInlineSnapshot(`
+      "export type NameFragment = { name: string | null } & { ' $fragmentName'?: 'NameFragment' };
+
+      export type AgeFragment = { age: number | null } & { ' $fragmentName'?: 'AgeFragment' };
+
+      export type UserQueryVariables = Exact<{
+        withName: boolean;
+      }>;
+
+
+      export type UserQuery = { user: (
+          { id: string }
+          & { ' $fragmentRefs'?: { 'AgeFragment': AgeFragment } }
+        ) & { ' $fragmentRefs'?: { 'NameFragment'?: NameFragment } } | null };
+      "
+    `);
+  });
+
+  it('keeps fragment masking for fragment spreads with both @include and @defer', async () => {
+    const document = parse(/* GraphQL */ `
+      fragment Name on User {
+        name
+      }
+      query user($withName: Boolean!) {
+        user {
+          id
+          ...Name @include(if: $withName) @defer
+        }
+      }
+    `);
+
+    const { content } = await plugin(
+      maskSchema,
+      [{ location: '', document }],
+      { inlineFragmentTypes: 'mask' },
+      { outputFile: 'graphql.ts' },
+    );
+
+    expect(content).toContain(`' $fragmentRefs'?: { 'NameFragment'?: Incremental<NameFragment> }`);
+    expect(content).not.toContain('name?:');
+    expect(content).toMatchInlineSnapshot(`
+      "export type NameFragment = { name: string | null } & { ' $fragmentName'?: 'NameFragment' };
+
+      export type UserQueryVariables = Exact<{
+        withName: boolean;
+      }>;
+
+
+      export type UserQuery = { user: { id: string } & { ' $fragmentRefs'?: { 'NameFragment'?: Incremental<NameFragment> } } | null };
+      "
+    `);
+  });
+
+  it('still inlines optional fields for conditional fragment spreads with @unmask', async () => {
+    const document = parse(/* GraphQL */ `
+      fragment Name on User {
+        name
+      }
+      query user($withName: Boolean!) {
+        user {
+          id
+          ...Name @unmask @include(if: $withName)
+        }
+      }
+    `);
+
+    const { content } = await plugin(
+      maskSchema,
+      [{ location: '', document }],
+      { inlineFragmentTypes: 'mask', customDirectives: { apolloUnmask: true } },
+      { outputFile: 'graphql.ts' },
+    );
+
+    expect(content).toContain('name?:');
+    expect(content).not.toContain(`' $fragmentRefs'?: { 'NameFragment'`);
+  });
+});

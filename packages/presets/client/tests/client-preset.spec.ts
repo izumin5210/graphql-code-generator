@@ -567,6 +567,52 @@ export * from "./gql";`);
     `);
   });
 
+  it('keeps fragment masking for fragment spreads with @include/@skip directives', async () => {
+    const { result } = await executeCodegen({
+      schema: /* GraphQL */ `
+        type Query {
+          user: User
+        }
+
+        type User {
+          id: ID!
+          nicknames: [String!]
+        }
+      `,
+      documents: /* GraphQL */ `
+        query GetUser($withNicknames: Boolean!) {
+          user {
+            id
+            ...UserNicknames @include(if: $withNicknames)
+          }
+        }
+
+        fragment UserNicknames on User {
+          nicknames
+        }
+      `,
+      generates: {
+        'out1/': {
+          preset,
+        },
+      },
+    });
+
+    const graphqlFile = result.find(file => file.filename === 'out1/graphql.ts');
+    // the conditional fragment spread must stay masked, with an optional ref key
+    expect(graphqlFile.content).toContain(
+      `' $fragmentRefs'?: { 'UserNicknamesFragment'?: UserNicknamesFragment }`,
+    );
+    // ...and must not be inlined into the operation type
+    expect(graphqlFile.content).not.toContain('nicknames?:');
+
+    const fragmentMaskingFile = result.find(file => file.filename === 'out1/fragment-masking.ts');
+    expect(fragmentMaskingFile.content).toContain('export type OptionalFragmentType');
+    expect(fragmentMaskingFile.content).toContain(
+      'fragmentType: OptionalFragmentType<DocumentTypeDecoration<TType, any>>',
+    );
+  });
+
   it('prevent duplicate operations', async () => {
     const { result } = await executeCodegen({
       schema: [
